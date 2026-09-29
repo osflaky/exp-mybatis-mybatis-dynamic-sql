@@ -1,0 +1,43 @@
+name: Java CI
+
+on:
+  workflow_dispatch:
+
+permissions: read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - cache: maven
+          distribution: temurin
+          java: 26
+          os: macos-latest
+          arch: arm64
+          runner: macos-latest
+          expander_leg: macos-latest-26-arm64
+      max-parallel: 6
+    name: Test JDK ${{ matrix.java }}, ${{ matrix.os }} [${{ matrix.expander_leg
+      }}]
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7
+    - name: Setup Java ${{ matrix.java }} ${{ matrix.distribution }}
+      uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6   # v6.0.1
+      with:
+        cache: ${{ matrix.cache }}
+          # Temurin does not publish every JDK release for Windows on ARM64; Zulu does.
+        distribution: ${{ (matrix.os == 'windows-latest' && matrix.arch == 
+          'arm64') && 'zulu' || matrix.distribution }}
+        java-version: ${{ matrix.java }}
+    - name: Test with Maven
+      run: ./mvnw test --batch-mode --no-transfer-progress --show-version 
+        -D"license.skip=true"
