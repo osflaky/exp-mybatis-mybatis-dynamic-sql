@@ -1,0 +1,62 @@
+/*
+ *    Copyright 2016-2026 the original author or authors.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *       https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+package org.mybatis.dynamic.sql.dsl;
+
+import java.util.Arrays;
+import java.util.List;
+
+import org.mybatis.dynamic.sql.AndOrCriteriaGroup;
+import org.mybatis.dynamic.sql.BindableColumn;
+import org.mybatis.dynamic.sql.ColumnAndConditionCriterion;
+import org.mybatis.dynamic.sql.CriteriaGroup;
+import org.mybatis.dynamic.sql.RenderableCondition;
+import org.mybatis.dynamic.sql.SqlCriterion;
+import org.mybatis.dynamic.sql.select.HavingApplier;
+
+public interface HavingOperations<F extends BooleanOperations<F>> {
+
+    default <T> F having(BindableColumn<T> column, RenderableCondition<T> condition,
+                         AndOrCriteriaGroup... subCriteria) {
+        return having(column, condition, Arrays.asList(subCriteria));
+    }
+
+    default <T> F having(BindableColumn<T> column, RenderableCondition<T> condition,
+                         List<AndOrCriteriaGroup> subCriteria) {
+        SqlCriterion sqlCriterion = ColumnAndConditionCriterion.withColumn(column)
+                .withCondition(condition)
+                .withSubCriteria(subCriteria)
+                .build();
+
+        return having(sqlCriterion);
+    }
+
+    default F having(SqlCriterion initialCriterion, AndOrCriteriaGroup... subCriteria) {
+        return having(initialCriterion, Arrays.asList(subCriteria));
+    }
+
+    default F having(SqlCriterion initialCriterion, List<AndOrCriteriaGroup> subCriteria) {
+        SqlCriterion sqlCriterion = new CriteriaGroup.Builder()
+                .withInitialCriterion(initialCriterion)
+                .withSubCriteria(subCriteria)
+                .build();
+
+        return having(sqlCriterion);
+    }
+
+    F having(SqlCriterion initialCriterion);
+
+    F applyHaving(HavingApplier havingApplier);
+}
